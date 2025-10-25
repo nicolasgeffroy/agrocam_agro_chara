@@ -296,7 +296,6 @@ You can find what's can/have to be done for this repository (you can also check 
 
 | To be done        | Details           | How can you contribute ? |
 | :-: |:-:| :-:|
-|  Fill the Model Evaluation      | Adds the performance of models for the segmentation and prediction task in the main README file. | You can't sorry |
 | Intermediate README files      | Adds all the README in the different blocks to detail what does each block (and their functions)  |  You can't sorry |
 | Automate the Selection block      | In my work the selection part were done manualy and for the pipeline to be operationnal it needs to be automatic  |  You can either propose ideas with what you saw in the notebook and/or code the function making it automatic. |
 | Automate the choice of image format      | In my work this part (in the segmentation block) were done manualy and for the pipeline to be operationnal it needs to be automatic  |  You can either propose ideas with what you saw in the notebook and/or code the function making it automatic. |
