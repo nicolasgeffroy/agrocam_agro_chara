@@ -302,7 +302,7 @@ You can find what's can/have to be done for this repository (you can also check 
 
 Make sure the stick as much as possible to the style in which the repository has been written.
 
-Feel also free to signal bugs, highlight something you don't understand (sorry in advance for syntax errors 😅), where I made a mistake or other issues linked to the code or its documentation in the [**Issues**](https://github.com/nicolasgeffroy/agrocam_agro_chara/issues) tab.
+Feel also free to signal bugs in the [**Issues**](https://github.com/nicolasgeffroy/agrocam_agro_chara/issues) tab. You can also highlight something you don't understand (sorry in advance for syntax errors 😅) or where I made a mistake or other issues linked to the code or its documentation in the [**Discussion**](https://github.com/nicolasgeffroy/agrocam_agro_chara/discussions) tab.
 
 ## 📄 License
 
