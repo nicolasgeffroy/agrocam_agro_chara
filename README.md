@@ -359,9 +359,10 @@ You can find what's can/have to be done for this repository (you can also check 
 
 | Task        | Details           | How can you contribute ? |
 | :-: |:-:| :-:|
-| Intermediate README files      | Adds all the README in the different blocks to detail what does each block (and their functions)  |  You can't sorry |
+| Intermediate README files      | Adds all the README in the different blocks to detail what does each block (and their functions)  |  |
 | Adding the result of the Selection block to the Prediction block      |  The prediction_function.py must take into account the argument in the file parameters.txt  |  You can propose new prediction_function.py file which does the trick. |
-| Automate the choice of image format      | In my work this part (in the segmentation block) were done manualy and for the pipeline to be operationnal it needs to be automatic  |  You can either propose ideas with what you saw in the notebook and/or code the function making it automatic. |
+| Automate the choice of image format      | In my work this part (in the segmentation block) were done manualy and for the pipeline to be operationnal it needs to be automatic  |  You can either propose ideas with what you saw in the notebook and/or code (by [forking](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and creating a pull request) the function making it automatic. |
+| Change where the images are stored and used      | For now, all the images used for this repository are stored in the same repository which can lead to difficulties when pushing or cloning   |  You can either propose ideas and/or code (by [forking](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and creating a pull request) for the function to do the task. |
 
 Make sure the stick as much as possible to the style in which the repository has been written.
 
