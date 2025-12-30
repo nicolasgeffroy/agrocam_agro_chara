@@ -248,7 +248,7 @@ import copy
 from pandas import DataFrame, to_datetime
 from tqdm import tqdm
 
-def agro_para_extr(data, type_entity="sheath", save=False):
+def agro_para_extr(data, type_entity="sheath", save=False, save_path = "Core/Results/Agro_chara_vine.csv"):
     """
     Extract agronomic parameters from Agrocam images and masks.
 
@@ -322,7 +322,7 @@ def agro_para_extr(data, type_entity="sheath", save=False):
         ## Periodically saving results
         # Save results to CSV every 50 iterations and at the end of processing.
         if ((i % 10 == 0) or (i == data.shape[0] - 1)) and save:
-            para_agro.to_csv("Core/Results/Agro_chara_vine.csv", index=False)
+            para_agro.to_csv(save_path, index=False)
 
     return para_agro
 
@@ -335,6 +335,10 @@ if __name__ == "__main__":
     parser.add_argument('--name_of_database_used', type=str, required=False, 
                         help='URL of the csv file containing images, mask and information about it.', 
                         default="Core/Results/Image_chara_all.csv")
+    # Path to save the the database resulting
+    parser.add_argument('--path_saving', type=str, required=False, 
+                        help='Path to which the database will be saved', 
+                        default="Core/Results/Agro_chara_vine.csv")
     # Name of the entity used for generating the upper zone of the image
     parser.add_argument('--name_of_mask_used', type=str, required=False, 
                         help='Name of the entity used to determine the upper part of the image', 
@@ -344,4 +348,4 @@ if __name__ == "__main__":
     
     ## Read the database with all the Agrocam Image
     data = read_csv(args.name_of_database_used)
-    _ = agro_para_extr(data, type_entity=args.name_of_mask_used, save=True)
+    _ = agro_para_extr(data, type_entity=args.name_of_mask_used, save=True, save_path=args.path_saving)

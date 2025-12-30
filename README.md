@@ -17,30 +17,32 @@ The **agronomic characteristics** extracted from the images and forecasted for 1
 
 ## 📜 Table of Contents
 
-1. [Pipeline Overview](#project-overview)  
-2. [Pipeline Workflow](#pipeline-workflow)  
-3. [Features](#features)  
-4. [Installation](#installation)  
-5. [Usage](#usage)  
-6. [Input Data](#input-data)  
-7. [Model Training and Evaluation](#model-training-and-evaluation)  
-8. [Results Summary](#results-summary)  
-9. [Project Structure](#project-structure)  
-10. [Troubleshooting](#troubleshooting)  
-11. [Contributors](#contributors)  
-12. [License](#license)  
+1. [Pipeline Overview](##Pipeline%20Overview)
+2. [Repository Organization](##Repository%20Organization)
+3. [Installation and usage](##Installation%20and%20usage)
+    1. [Initializing](###Initializing)
+    2. [How to use it](###How%20to%20use%20it)
+        1. [Segmentation](###Segmentation)
+        2. [Extraction](###Extraction)
+        3. [Selection](###Selection)
+        4. [Prediction](###Prediction)
+4. [Pretrained model weight](##Pretrained%20model%20weight)  
+5. [Model Evaluation](##Model%20Evaluation)  
+6. [How to contribute ?](##How%20to%20contribute%20?)  
+7. [License](##License)  
+8. [Citation](##Citation)
 
 ## ⚙️ Pipeline Overview
 
 This pipeline aims at **extracting and predicting agronomic parameters from vineyard images in real condition**. For that, it has been seperated into 4 main steps :
 - **Segmentation** of vineyard images into semantic zones (leaves, trunk, inter-row, irrigation sheath)
 - **Extraction** of agronomics characteristics using those semantic zones
-- **Validation** of those characteristics so that it's coherent with scientific knowledge
+- **Selection** of those characteristics so that it's coherent with scientific knowledge
 - **Prediction** of characteristics using temporal series of those vineyard images
 
 ## 🔎 Repository Organization
 
-This pipeline is composed into 4 *almost* self-sufficient block :
+This pipeline is composed of 1 common block (*Core*) 4 *almost* self-sufficient block (*Segmentation*, *Extraction*, *Selection* and *Prediction*) :
 
 | Folder | Content |
 |:-:|:-:|
@@ -49,6 +51,51 @@ This pipeline is composed into 4 *almost* self-sufficient block :
 | [Extraction](https://github.com/nicolasgeffroy/agrocam_agro_chara/Extraction) | Contains all the functions which **uses the mask generated** by the [Segmentation](https://github.com/nicolasgeffroy/agrocam_agro_chara/Segmentation) (highlighting different ZOI) to **extract different agronomic characteristics** of images. |
 | [Selection](https://github.com/nicolasgeffroy/agrocam_agro_chara/Selection) | Contains all the function which **uses the [extracted](https://github.com/nicolasgeffroy/agrocam_agro_chara/Extraction) agronomic characteristics** of each images to select the characteristics which **best represent agronomic reality**. |
 | [Prediction](https://github.com/nicolasgeffroy/agrocam_agro_chara/Prediction) | Contains all the function which **trains a model (LSTM or CNN-LSTM hybrid) to predict**, using temporal series of vineyards images, **vineyard's futur characteristics** as well as function using the trained model. |
+
+<details><summary><b> Diagram </b></summary>
+
+```graphql
+agrocam_agro_chara/
+├── Core/
+│   ├── Images/
+│   |   ├── all_image
+|   |   └── image_train
+│   ├── Results/
+|   |   ├── Image_mask/
+|   |   ├── Agro_chara_vine.csv
+|   |   ├── Agro_chara_vine_train.csv
+|   |   ├── Image_chara_all.csv
+|   |   └── Image_chara_train.csv
+│   └── README.md
+├── Segmentation/
+│   ├── format_choice/
+│   │   ├── Image_chara_all.csv
+│   │   └── k_means_seg.ipynb
+│   ├── Liste_Agrocam.csv
+│   ├── segmentation_function.py
+│   ├── requirements.txt
+│   └── README.md
+├── Extraction/
+│   ├── extraction_function.py
+│   ├── requirements.txt
+│   └── README.md
+├── Selection/
+│   ├── segmentation_function.py
+│   ├── requirements.txt
+│   └── README.md
+├── Prediction/
+│   ├── model/
+│   |   ├── cnn_lstm.py
+│   |   └── mobilenet_LRASPP.py
+│   ├── prediction_function.py
+│   ├── requirements.txt
+│   └── README.md
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
+
+</details>
 
 ## 💻 Installation and usage
 
@@ -95,17 +142,16 @@ python -m pip install -r requirements.txt
 
 | Package  | Version | Keywords                                         | For information                                                       |
 | :-:      | :-:     | :-:                                              | :-:                                                                   |
-| pillow | >=9.0 | Image processing                                     | [link](https://pillow.readthedocs.io/en/stable)                       |
-| requests | >=2.0 | Make QGIS like request on the internet             | [link](https://requests.readthedocs.io/en/latest)                     |
-| numpy | >=1.0 | Adding Array format and function to exploit them      | [link](https://numpy.org)                                             |
-| pandas | >=1.0 | Adding DataFrame format and function to exploit them | [link](https://pandas.pydata.org/docs/getting_started/overview.html)  |
-| tqdm | >=4.0 | Adds a progress bar to loops                           | [link](https://tqdm.github.io)                                        |
-| torch | >=2.0 | Base for Deep Learning application                    | [link](https://docs.pytorch.org/docs/stable/index.html)               |
-| torchvision | >=0.15 | Image Deep Learning framework                  | [link](https://docs.pytorch.org/vision/stable/index.html)             |
-| scikit-learn | >=1.0 | Adds various model and Preprocessing tools     | [link](https://scikit-learn.org/stable)                               |
-| tensorboard | >=2.0 | Adds a vizualisation kit for machine learning   | [link](https://www.tensorflow.org/tensorboard?hl=fr)                  |
-| matplotlib | >=3.0 | Adds various plot to vizualise any data          | [link](https://matplotlib.org/cheatsheets)                            |
-| scipy | >=1.0 | Statistic and other algorithm for scientific purpose  | [link](https://docs.scipy.org/doc/scipy/index.html)                   |
+| pillow | 12.0 | Image processing                                     | [link](https://pillow.readthedocs.io/en/stable)                       |
+| requests | 2.32.5 | Make QGIS like request on the internet             | [link](https://requests.readthedocs.io/en/latest)                     |
+| numpy | 2.3.4 | Adding Array format and function to exploit them      | [link](https://numpy.org)                                             |
+| pandas | 2.3.3 | Adding DataFrame format and function to exploit them | [link](https://pandas.pydata.org/docs/getting_started/overview.html)  |
+| tqdm | 4.67.1 | Adds a progress bar to loops                           | [link](https://tqdm.github.io)                                        |
+| torch | 2.9 | Base for Deep Learning application                    | [link](https://docs.pytorch.org/docs/stable/index.html)               |
+| torchvision | 0.24.0 | Image Deep Learning framework                  | [link](https://docs.pytorch.org/vision/stable/index.html)             |
+| scikit-learn | 1.7.2 | Adds various model and Preprocessing tools     | [link](https://scikit-learn.org/stable)                               |
+| tensorboard | 2.20 | Adds a vizualisation kit for machine learning   | [link](https://www.tensorflow.org/tensorboard?hl=fr)                  |
+| matplotlib | 3.10.7 | Adds various plot to vizualise any data          | [link](https://matplotlib.org/cheatsheets)                            |
 
 </details>
 
@@ -204,21 +250,38 @@ python Segmentation/segmentation_function.py
 ```bash
 python Extraction\extraction_function.py
 ```
-==> Generate a database with for each image in *Core/Results/Image_chara_all.csv* we have their agronomic parameters associated. To determine the porosity, it used the sheath mask to determine the upper zone of the image.
+==> Generate a database (saved in *Core/Results/Agro_chara_vine.csv*) with for each image in *Core/Results/Image_chara_all.csv* we have their agronomic parameters associated. To determine the porosity, it used the sheath mask to determine the upper zone of the image.
 
 ```bash
 python Extraction\extraction_function.py 
-    --<name_of_database_used> "Core/Results/Image_chara_train.csv"
-    --<name_of_mask_used> "trunc"
+    --name_of_database_used "Core/Results/Image_chara_train.csv"
+    --name_of_mask_used "trunc"
+    --path_saving "Core/Results/Agro_chara_vine_train.csv"
 ```
-==> Generate a database with for each image in *Core/Results/Image_chara_train.csv* we have their agronomic parameters associated. To determine the porosity, it used the trunc mask to determine the upper zone of the image.
+==> Generate a database (saved in *Core/Results/Agro_chara_vine_train.csv*) with for each image in *Core/Results/Image_chara_train.csv* we have their agronomic parameters associated. To determine the porosity, it used the trunc mask to determine the upper zone of the image.
 </details>
 
 ### Selection 
 
-There are no function to call for now. You can go in this folder and look at the notebook to have an idea of the methodology.
+- **Purpose** = Select the different agronomic characteristics that will be used for [prediction](#prediction).
+- *Input =* Two databases with one representing each images and their characteristics determined during [extraction](#extraction) (*Core/Results/Image_chara_all.csv*) and the other others the images used in training with their characteristics determined with their ground truth mask (*Core/Results/Image_chara_train.csv*) .
+- *Output =* A message with the characteristics selected and, if save is set to True, those characteristics are written in the file *parameters.txt* located in the [prediction](#prediction) block.
 
-**For now, all the agronomic characteristcs will be used for [prediction](#Prediction)**.
+| Arguments | description | Input | Default |
+| :-: | :-: | :-: | :-: |
+|  --\<agro_chara_all> | URL to the csv file with the agronomic characteritics of all the images where the variable are selected | string | "Core/Results/Agro_chara_vine.csv" |
+|  --\<agro_chara_train> | URL to the csv file with the agronomic characteritics of the trained images used for selecting variables | string | "Core/Results/Agro_chara_vine_train.csv" |
+|  --\<dist_func> | Name of the function which calculate the distance used to compare each time series | string | "dist_manathan" |
+|  --\<save> | If True, saves the results of the function in the "parameters.txt" file for the prediction | bool | False |
+
+<details> <summary><b> Examples </b></summary>
+
+```bash
+python Selection\selection_function.py
+```
+==> Prints the variables in *Core/Results/Agro_chara_vine.csv* that must be used for prediction in order to make sure all the treatment can be distinguished and that the values of each treatment in *Core/Results/Agro_chara_vine_train.csv* are close to *Core/Results/Agro_chara_vine.csv*.
+
+</details>
 
 ### Prediction 
 
@@ -294,10 +357,10 @@ prédiction, PE = MobileNetV3 seulement pré-entraîné avec COCO)
 
 You can find what's can/have to be done for this repository (you can also check out the [**Issues**](https://github.com/nicolasgeffroy/agrocam_agro_chara/issues) tab) : 
 
-| To be done        | Details           | How can you contribute ? |
+| Task        | Details           | How can you contribute ? |
 | :-: |:-:| :-:|
 | Intermediate README files      | Adds all the README in the different blocks to detail what does each block (and their functions)  |  You can't sorry |
-| Automate the Selection block      | In my work the selection part were done manualy and for the pipeline to be operationnal it needs to be automatic  |  You can either propose ideas with what you saw in the notebook and/or code the function making it automatic. |
+| Adding the result of the Selection block to the Prediction block      |  The prediction_function.py must take into account the argument in the file parameters.txt  |  You can propose new prediction_function.py file which does the trick. |
 | Automate the choice of image format      | In my work this part (in the segmentation block) were done manualy and for the pipeline to be operationnal it needs to be automatic  |  You can either propose ideas with what you saw in the notebook and/or code the function making it automatic. |
 
 Make sure the stick as much as possible to the style in which the repository has been written.
