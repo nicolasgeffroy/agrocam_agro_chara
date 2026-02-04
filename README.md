@@ -22,6 +22,7 @@ The **agronomic characteristics** extracted from the images and forecasted for 1
 3. [Installation and usage](##Installation%20and%20usage)
     1. [Initializing](###Initializing)
     2. [How to use it](###How%20to%20use%20it)
+        1. [Format](###Format)
         1. [Segmentation](###Segmentation)
         2. [Extraction](###Extraction)
         3. [Selection](###Selection)
@@ -47,6 +48,7 @@ This pipeline is composed of 1 common block (*Core*) 4 *almost* self-sufficient 
 | Folder | Content |
 |:-:|:-:|
 | [Core](https://github.com/nicolasgeffroy/agrocam_agro_chara/Core) | Contains an **example of an image database and intermediate results** which can be directly used by pipeline blocks. It is also where **output of each blocks as stored**. |
+| [Format](https://github.com/nicolasgeffroy/agrocam_agro_chara/Format) | Contains all the functions which goal is to **determine the best image format to use for its [Segmentation](https://github.com/nicolasgeffroy/agrocam_agro_chara/Segmentation)** |
 | [Segmentation](https://github.com/nicolasgeffroy/agrocam_agro_chara/Segmentation) | Contains all the function to summarize the **images into a dataset**, use them to **train a model (MobileNetv3 or DeepLabv3) for segmentation** and use this trained model. It also contains the function used to **determine the image format used for learning**. |
 | [Extraction](https://github.com/nicolasgeffroy/agrocam_agro_chara/Extraction) | Contains all the functions which **uses the mask generated** by the [Segmentation](https://github.com/nicolasgeffroy/agrocam_agro_chara/Segmentation) (highlighting different ZOI) to **extract different agronomic characteristics** of images. |
 | [Selection](https://github.com/nicolasgeffroy/agrocam_agro_chara/Selection) | Contains all the function which **uses the [extracted](https://github.com/nicolasgeffroy/agrocam_agro_chara/Extraction) agronomic characteristics** of each images to select the characteristics which **best represent agronomic reality**. |
@@ -66,6 +68,10 @@ agrocam_agro_chara/
 |   |   ├── Agro_chara_vine_train.csv
 |   |   ├── Image_chara_all.csv
 |   |   └── Image_chara_train.csv
+│   └── README.md
+├── Format/
+│   ├── choose_img_format_function.py
+│   ├── requirements.txt
 │   └── README.md
 ├── Segmentation/
 │   ├── format_choice/
@@ -155,6 +161,8 @@ python -m pip install -r requirements.txt
 
 </details>
 
+PS : All those packages have been used under the version **3.11.9** of Python.
+
 **Summary**
 
 ```bash
@@ -199,7 +207,36 @@ python <name_folder>/<name_folder>_function.py --<argument> ...
 
 ---
 
+### Format
+
+- **Purpose** = Using the k-means algorithm, the block approximate the efficacity of the image segmentation for each image format and proposes a format to use for the segmentation block.
+- *Input =* 
+    - The database representing each image and their ground-truth mask that will be used for the training of the segmentation model  (*Core/Results/Image_chara_train.csv*).
+- *Output =* 
+    - A string displaying the best format to use to segment images.
+
+| Arguments | description | Input | Default |
+| :-: | :-: | :-: | :-: |
+|  --\<train_image_path> | URL of the folder containing the images and their corresponding mask for segmentation training  | string | "Core/Results/Image_chara_train.csv" |
+|  --\<string_for_list_format> | String representing the list of format to test | string | "[RGB,LAB,RGBA,HSV,RGB-LAB,RGB-HSV,LAB-HSV,RGB-LAB-HSV]" |
+
+<details> <summary><b> Examples </b></summary>
+
+```bash
+python Format/choose_img_format_function.py 
+```
+==> Determine the best image format to use for the image segmentation model between RGB, LAB, HSV and some of their combinaison (RGB-LAB,RGB-HSV,LAB-HSV,RGB-LAB-HSV) using the database of images and its mask (*Core/Results/Image_chara_train.csv*)
+
+```bash
+python Segmentation/segmentation_function.py 
+    --string_for_list_format "[RGB,LAB,RGBA,HSV]"
+```
+==> Determine the best image format to use for the image segmentation model between RGB, LAB, HSV using the database of images and its mask (*Core/Results/Image_chara_train.csv*)
+
+</details>
+
 ### Segmentation
+
 - **Purpose** = Trains a MobileNetv3 model to segment an image into 4 zone of interest : leaf, inter-row, trunc and sheath (**train**) or use a trained model to segment a set of images (**segment**).
 - *Input =* 
     - (**train**) Image and ground truth mask chosen for training (*Core/image_train*) 
@@ -215,6 +252,8 @@ python <name_folder>/<name_folder>_function.py --<argument> ...
 |  --\<train_or_segment> | Choose to train an algorithm or use a trained one to segment images | "train" or "segment" | "segment" |
 |  --\<folder_url_train_mask> | **training** = Ground-truth mask // **segment** = URL of the folder containing mask for calcultating the distance between trunc and sheath | string | "Core/Images/ image_train/masque_final" |
 |  --\<weight_url> | Import weight of the model. If "No_weight" used, [pretrained weights for MobileNetV3](https://docs.pytorch.org/vision/main/models/generated/torchvision.models.segmentation.lraspp_mobilenet_v3_large.html#torchvision.models.segmentation.lraspp_mobilenet_v3_large) are used | string | "No_weight" |
+|  --\<format_used> | Which image format is used (**train**) to train the model or (**segment**) to generate all the associated mask | string | "HSV"
+|  --\<saving> | **train** Decides if the trained weights are saved | bool | True |
 |  --\<epochs> | **train** Number of epochs for training | int | 10 |
 
 <details> <summary><b> Examples </b></summary>
@@ -228,10 +267,12 @@ python Segmentation/segmentation_function.py
 
 ```bash
 python Segmentation/segmentation_function.py 
-    --<train_or_segment> train 
-    --<epochs> 100
+    --train_or_segment train 
+    --epochs 100
+    --saving False
+    --format_used "HSV-LAB"
 ```
-==> **Train a pretrained MobileNetv3 model** for 100 epocks using training images (*Core/Images/image_train/image*) and their ground truth mask (*Core/Images/image_train/masque_final*). It also generate a database (*Core/Results/Image_chara_train.csv*) with all the images used and information about them.
+==> **Train a pretrained MobileNetv3 model** for 100 epocks using training images (*Core/Images/image_train/image*), represented using the combinaison of "HSV" and "LAB" format, and their ground truth mask (*Core/Images/image_train/masque_final*) without saving its weights. It also generate a database (*Core/Results/Image_chara_train.csv*) with all the images used and information about them.
 
 </details>
 
@@ -360,8 +401,6 @@ You can find what's can/have to be done for this repository (you can also check 
 | Task        | Details           | How can you contribute ? |
 | :-: |:-:| :-:|
 | Intermediate README files      | Adds all the README in the different blocks to detail what does each block (and their functions)  |  |
-| Adding the result of the Selection block to the Prediction block      |  The prediction_function.py must take into account the argument in the file parameters.txt  |  You can propose new prediction_function.py file which does the trick. |
-| Automate the choice of image format      | In my work this part (in the segmentation block) were done manualy and for the pipeline to be operationnal it needs to be automatic  |  You can either propose ideas with what you saw in the notebook and/or code (by [forking](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and creating a pull request) the function making it automatic. |
 | Change where the images are stored and used      | For now, all the images used for this repository are stored in the same repository which can lead to difficulties when pushing or cloning   |  You can either propose ideas and/or code (by [forking](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) and creating a pull request) for the function to do the task. |
 
 Make sure the stick as much as possible to the style in which the repository has been written.

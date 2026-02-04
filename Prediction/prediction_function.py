@@ -119,18 +119,14 @@ def time_seperate_train_test(data, freq_sep_time=15, train_size=0.6):
 
         ## Interpolating missing values (for the missing times)
         # Create a complete date range which is used to reveal the missing dates in the data.
-        time_corr = pd.date_range(
-            start=min(data_set_filt.index),
-            end=max(data_set_filt.index),
-            normalize=True,
-            freq="D"
-        )
+        time_corr = pd.date_range(start=min(data_set_filt.index),
+                                  end=max(data_set_filt.index),
+                                  normalize=True,
+                                  freq="D")
         data_set_filt = data_set_filt.reindex(time_corr)
         # Interpolate missing values using time-based interpolation.
-        data_set_filt = data_set_filt.infer_objects(copy=False).interpolate(
-            method="time",
-            limit_direction='both'
-        )
+        data_set_filt = data_set_filt.infer_objects(copy=False).interpolate(method="time",
+                                                                            limit_direction='both')
         # Fill remaining NaN values in treatment and image columns.
         data_set_filt.loc[:, "treatment"] = data_set_filt.loc[:, "treatment"].fillna(i)
         data_set_filt.loc[:, "image"] = data_set_filt.loc[:, "image"].fillna("No Image")
@@ -151,43 +147,31 @@ def time_seperate_train_test(data, freq_sep_time=15, train_size=0.6):
         # Define the step size for time periods.
         step_time = str(freq_sep_time) + 'D'
         # Create time ranges with the specified frequency.
-        time_rang = pd.date_range(
-            start=min(data_set_filt["time"]),
-            end=max(data_set_filt["time"]),
-            normalize=True,
-            freq=step_time
-        )
+        time_rang = pd.date_range(start=min(data_set_filt["time"]),
+                                  end=max(data_set_filt["time"]),
+                                  normalize=True,
+                                  freq=step_time)
         # Create time period tuples for splitting.
-        test_train_index = [
-            (time_rang[i], time_rang[i+1] - timedelta(days=1))
-            for i in range(len(time_rang)-2)
-        ]
+        test_train_index = [(time_rang[i], time_rang[i+1] - timedelta(days=1))
+                            for i in range(len(time_rang)-2)]
         # Shuffle the time periods for random splitting.
         rand.shuffle(test_train_index)
 
         ## Splitting time periods into train and test sets
         # Allocate time periods to training set based on train_size.
-        train_index_temp = [
-            test_train_index[i]
-            for i in range(len(test_train_index))
-            if (i/len(test_train_index)) <= train_size
-        ]
+        train_index_temp = [test_train_index[i]
+                            for i in range(len(test_train_index))
+                            if (i/len(test_train_index)) <= train_size]
         # Allocate remaining time periods to testing set.
-        test_index_temp = [
-            test_train_index[i]
-            for i in range(len(test_train_index))
-            if (i/len(test_train_index)) > train_size
-        ]
+        test_index_temp = [test_train_index[i]
+                           for i in range(len(test_train_index))
+                           if (i/len(test_train_index)) > train_size]
         # Convert time ranges to daily date ranges for training set.
-        train_index_nodate = [
-            pd.date_range(start=j[0], end=j[1], freq="D")
-            for j in train_index_temp
-        ]
+        train_index_nodate = [pd.date_range(start=j[0], end=j[1], freq="D")
+                              for j in train_index_temp]
         # Convert time ranges to daily date ranges for testing set.
-        test_index_nodate = [
-            pd.date_range(start=j[0], end=j[1], freq="D")
-            for j in test_index_temp
-        ]
+        test_index_nodate = [pd.date_range(start=j[0], end=j[1], freq="D")
+                             for j in test_index_temp]
         # Store training and testing time ranges.
         # This is the one that will be used by the Dataloader to generate the input.
         index_tr[i].append(train_index_nodate)
@@ -197,29 +181,21 @@ def time_seperate_train_test(data, freq_sep_time=15, train_size=0.6):
         ## Target time periods are those which holds the characteristics we would like to predict.
         ## So for training and testing, it is essential to make sure they are in both sets.
         # Create shifted time ranges for targets in training set.
-        train_index_add = [
-            (train_index_temp[i][0] + timedelta(days=freq_sep_time),
-             train_index_temp[i][1] + timedelta(days=freq_sep_time))
-            for i in range(len(train_index_temp))
-        ]
+        train_index_add = [(train_index_temp[i][0] + timedelta(days=freq_sep_time),
+                            train_index_temp[i][1] + timedelta(days=freq_sep_time))
+                           for i in range(len(train_index_temp))]
         # Create shifted time ranges for targets in testing set.
-        test_index_add = [
-            (test_index_temp[i][0] + timedelta(days=freq_sep_time),
-             test_index_temp[i][1] + timedelta(days=freq_sep_time))
-            for i in range(len(test_index_temp))
-        ]
+        test_index_add = [(test_index_temp[i][0] + timedelta(days=freq_sep_time),
+                           test_index_temp[i][1] + timedelta(days=freq_sep_time))
+                          for i in range(len(test_index_temp))]
         # Combine original and shifted time ranges.
         train_index_temp.extend(train_index_add)
         test_index_temp.extend(test_index_add)
         # Convert combined time ranges to daily date ranges.
-        train_index_nodate = [
-            pd.date_range(start=j[0], end=j[1], freq="D")
-            for j in train_index_temp
-        ]
-        test_index_nodate = [
-            pd.date_range(start=j[0], end=j[1], freq="D")
-            for j in test_index_temp
-        ]
+        train_index_nodate = [pd.date_range(start=j[0], end=j[1], freq="D")
+                              for j in train_index_temp]
+        test_index_nodate = [pd.date_range(start=j[0], end=j[1], freq="D")
+                             for j in test_index_temp]
         # Flatten the date ranges to lists of dates.
         train_index = [j[m].date() for j in train_index_nodate for m in range(len(j))]
         test_index = [j[m].date() for j in test_index_nodate for m in range(len(j))]
@@ -728,12 +704,8 @@ def time_train(data_total,model, epochs, save=True):
         cumacc_classif = 0
         # Define labels for tracking prediction accuracy of each characteristic.
         label = ['H_vigne', 'P_vigne', 'Hue_vigne', 'Hue_rang']
-        cumacc_train = {
-            i: {
-                "score_pred": 0,
-                "label": label[i]
-            } for i in range(len(label))
-        }
+        cumacc_train = {i: {"score_pred": 0,
+                            "label": label[i]} for i in range(len(label))}
 
         ## Data preparation
         # Split data into training and testing sets with temporal separation.
@@ -745,14 +717,10 @@ def time_train(data_total,model, epochs, save=True):
         label_train, time_train = data_train.get_label_time()
         label_test, time_test = data_test.get_label_time()
         # Create data loaders with custom samplers.
-        train_loader = DataLoader(
-            dataset=data_train,
-            batch_sampler=TimePerClassSampler(label_train, time_train, time_index=index_tr_ts[0])
-        )
-        test_loader = DataLoader(
-            dataset=data_test,
-            batch_sampler=TimePerClassSampler(label_test, time_test, time_index=index_tr_ts[1])
-        )
+        train_loader = DataLoader(dataset=data_train,
+                                  batch_sampler=TimePerClassSampler(label_train, time_train, time_index=index_tr_ts[0]))
+        test_loader = DataLoader(dataset=data_test,
+                                 batch_sampler=TimePerClassSampler(label_test, time_test, time_index=index_tr_ts[1]))
 
         ## Training phase
         # Set model to training mode.
@@ -789,10 +757,8 @@ def time_train(data_total,model, epochs, save=True):
                 for o in cumacc_train:
                     cumacc_train[o]["score_pred"] += res_acc_predict[o]
                 # Calculate and accumulate classification accuracy.
-                cumacc_classif += acc_class(
-                    np.argmax(yhat_classif[batch].detach().numpy()),
-                    y_class[batch]
-                )
+                cumacc_classif += acc_class(np.argmax(yhat_classif[batch].detach().numpy()),
+                                            y_class[batch])
             # Update cumulative losses and sample count.
             cumloss_pred += l_pred * len(x)
             cumloss_classif += l_classif * len(x)
@@ -802,11 +768,9 @@ def time_train(data_total,model, epochs, save=True):
         # Log prediction accuracy for each characteristic.
         val = 0
         for k in cumacc_train:
-            writer.add_scalar(
-                'train/' + cumacc_train[k]["label"] + '/MSE',
-                cumacc_train[k]["score_pred"] / count,
-                epoch
-            )
+            writer.add_scalar('train/' + cumacc_train[k]["label"] + '/MSE',
+                              cumacc_train[k]["score_pred"] / count,
+                              epoch)
             val += 1
         # Log classification accuracy and losses.
         writer.add_scalar('train/acc', cumacc_classif / count, epoch)
@@ -822,12 +786,8 @@ def time_train(data_total,model, epochs, save=True):
             cumloss_pred, cumloss_classif, cumloss_total, count = 0, 0, 0, 0
             cumacc_classif = 0
             label = ['H_vigne', 'P_vigne', 'Hue_vigne', 'Hue_rang']
-            cumacc_train = {
-                i: {
-                    "score_pred": 0,
-                    "label": label[i]
-                } for i in range(len(label))
-            }
+            cumacc_train = {i: {"score_pred": 0,
+                                "label": label[i]} for i in range(len(label))}
             with torch.no_grad():
                 for z in test_loader:
                     # Extract and prepare validation data.
@@ -844,29 +804,23 @@ def time_train(data_total,model, epochs, save=True):
                         for o in cumacc_train:
                             cumacc_train[o]["score_pred"] += res_acc_predict[o]
 
-                        cumacc_classif += acc_class(
-                            np.argmax(yhat_classif[batch].detach().numpy()),
-                            y_class[batch]
-                        )
+                        cumacc_classif += acc_class(np.argmax(yhat_classif[batch].detach().numpy()),
+                                                    y_class[batch])
                     count += len(x)
                 # Log validation metrics.
                 val = 0
                 for k in cumacc_train:
-                    writer.add_scalar(
-                        'test/' + cumacc_train[k]["label"] + '/MSE',
-                        cumacc_train[k]["score_pred"] / count,
-                        epoch
-                    )
+                    writer.add_scalar('test/' + cumacc_train[k]["label"] + '/MSE',
+                                      cumacc_train[k]["score_pred"] / count,
+                                      epoch)
                     val += 1
                 writer.add_scalar('test/acc', cumacc_classif / count, epoch)
 
         ## Saving model checkpoints
         if save and (epoch % 5 == 0):
             # Save model checkpoint every 5 epochs.
-            torch.save(
-                model.state_dict(),
-                "checkpoint/" + model.name + '_checkpoint.pth'
-            )
+            torch.save(model.state_dict(),
+                       "checkpoint/" + model.name + '_checkpoint.pth')
 
 def data_filter(data_total, treatment, time_start):
     """
@@ -911,12 +865,10 @@ def data_filter(data_total, treatment, time_start):
     data_represent["time"] = pd.to_datetime(data_represent["time"])
     data_represent.set_index("time", inplace=True, drop=False)
     # Create a complete date range which is used to reveal the missing dates in the data.
-    time_corr = pd.date_range(
-        start=min(data_represent.index),
-        end=max(data_represent.index),
-        normalize=True,
-        freq="D"
-    )
+    time_corr = pd.date_range(start=min(data_represent.index),
+                              end=max(data_represent.index),
+                              normalize=True,
+                              freq="D")
     data_set_filt = data_represent.reindex(time_corr)
     # Interpolate missing values and fill NaN in treatment and image columns.
     data_set_filt = data_set_filt.interpolate(limit_direction='both')
@@ -940,11 +892,9 @@ def data_filter(data_total, treatment, time_start):
     data_represent["time"] = [d.date() for d in data_represent["time"]]
     time_input = [d.date() for d in time_input]
     # Extract indices for input times.
-    input_index = [
-        list(data_represent.loc[data_represent["time"].values == i, :].index.values)[0]
-        for i in time_input
-        if i in data_represent["time"].values
-    ]
+    input_index = [list(data_represent.loc[data_represent["time"].values == i, :].index.values)[0]
+                   for i in time_input
+                   if i in data_represent["time"].values]
     return input_index, time_verif
 
 if __name__ == "__main__":
@@ -953,17 +903,16 @@ if __name__ == "__main__":
     
     ## Ask the relevant arguments
     parser = argparse.ArgumentParser(description='Train or Use a prediction model for vineyard agronomic characteristics from a set of images.')
-    # Choose which model to use for prediction
     parser.add_argument('--lstm_model', type=str, required=False, default="model.cnn_lstm.CNN_LSTM",
                         help='Class (in the designated package) of the LSTM used as a prediction model')
-    # CNN arguments if a hybrid CNN-LSTM model is chosen
     parser.add_argument('--weight_url_cnn', type=str, required=False, default="No_weight",
                         help='Import weight of the cnn model. If given "No_weight", pretrained weights for MobileNetV3 are used')
     parser.add_argument('--weight_url_lstm', type=str, required=False, default="Prediction/checkpoint/MobileNet3_LSTM_checkpoint_final_hsv_notbi_norm.pth",
                         help='Import weight of the lstm model.')
-    # Choose between train or predict
     parser.add_argument('--train_or_predict', type=str, required=False, 
                         help='Choose to train an algorithm or use it to predict agronomic characteristics', default="predict")
+    parser.add_argument('--chara_chosen', type=str, required=False, 
+                        help='Input which characteristics will be predicted', default="[H_vigne,P_vigne,Hue_vigne,Hue_rang]")
     # Argments for training
     parser.add_argument('--epochs', type=int, required=False, help='Number of epochs for training', 
                         default=10)
@@ -978,6 +927,11 @@ if __name__ == "__main__":
     from model.mobilenet_LRASPP import LRASPP_MobileNet_V3_Large_Weights, lraspp_mobilenet_v3_large
     
     ## Prepare the images and model
+    # Loading the format to test
+    format_strings = args.string_for_list_format
+    format_list = str.split(format_strings, ",")
+    format_list[0] = format_list[0][1:]
+    format_list[-1] = format_list[-1][0:-1]
     # Generate the database for all the images and characteristics
     data = pd.read_csv("Core/Results/Agro_chara_vine.csv")
     # Generate the model and its pretrained weight
@@ -989,6 +943,7 @@ if __name__ == "__main__":
         if args.weight_url_cnn != "No_weight" :
             model_cnn.load_state_dict(torch.load(args.weight_url_cnn))
             print("Weight loaded !!")
+        # NEED TO HAD THE CHANGE TO THE FIRST LAYER WITH THE CHANNEL NUMBER CHANGING WITH CLASS
         model_cnn.name = "Mobilenetv3"
     
     # Loading the lstm model
@@ -1021,7 +976,7 @@ if __name__ == "__main__":
         time_train(model_lstm, epochs, data, save=True, mode=["HSV"])
     else:
         trans = transforms.Compose([transforms.ToTensor()])
-        mean_norm, std_norm = np.mean(data[["H_vigne", "P_vigne", "Hue_vigne", "Hue_rang"]], axis=0) , np.std(data[["H_vigne", "P_vigne", "Hue_vigne", "Hue_rang"]], axis=0)
+        mean_norm, std_norm = np.mean(data[format_list], axis=0) , np.std(data[format_list], axis=0)
         # Generating the index of the data with the start date and the following date
         input_index, time_verif = data_filter(data, args.treatment, args.time_start)
         # Generating the images of each image
@@ -1035,11 +990,9 @@ if __name__ == "__main__":
         # Generate predictions from all the model.
         res = model_lstm(input_image)
         res_pred_1 = res[0].detach().numpy()
-        result_pred_1 = pd.DataFrame(
-            res_pred_1.squeeze(0),
-            index=time_verif,
-            columns=['H_vigne', 'P_vigne', 'Hue_vigne', 'Hue_rang']
-        )
+        result_pred_1 = pd.DataFrame(res_pred_1.squeeze(0),
+                                     index=time_verif,
+                                     columns=format_list)
         # Denormalize all model predictions.
         result_pred_1 = (result_pred_1 * std_norm) + mean_norm
         print(result_pred_1)
