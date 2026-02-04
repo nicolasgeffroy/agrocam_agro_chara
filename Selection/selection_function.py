@@ -367,6 +367,4 @@ if __name__ == "__main__":
     # The different treatment are well separated
     # The ground truth values generated with ground-truth mask are close to predicted ones.
     res = select_variable(data_all=data_para_all, data_train=data_para_train, dist_func=dist_func_used)
-    print(res)
-    with open("Prediction/parameters.txt", "w") as f:
-        f.write("Variables_for_prediction = "+ str(res))
+    print("Variable(s) selected : ", str(res))

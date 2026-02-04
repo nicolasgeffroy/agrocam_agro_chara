@@ -1,1 +1,0 @@
-Variables_for_prediction = ['Hue_vigne', 'Hue_rang']

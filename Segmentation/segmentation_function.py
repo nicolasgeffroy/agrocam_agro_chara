@@ -12,7 +12,7 @@ import requests
 from io import BytesIO
 from typing import Optional, Union
 
-def load_image(image: Union[str, "PIL.Image.Image"], timeout: Optional[float] = None, mode = ["RGB"]) -> "PIL.Image.Image":
+def load_image(image: Union[str, "PIL.Image.Image"], timeout: Optional[float] = None, format = ["RGB"]) -> "PIL.Image.Image":
     # Inspired by https://github.com/huggingface/transformers/blob/main/src/transformers/image_utils.py
     """
     Loads `image` to a PIL Image.
@@ -22,7 +22,7 @@ def load_image(image: Union[str, "PIL.Image.Image"], timeout: Optional[float] = 
             The image to convert to the PIL Image format.
         timeout (`float`, *optional*):
             The timeout value in seconds for the URL request.
-        mode ('list'): (added)
+        format ('list'): (added)
             Image representation space ("RGB", "HSV", "LAB"...)
 
     Returns:
@@ -54,16 +54,16 @@ def load_image(image: Union[str, "PIL.Image.Image"], timeout: Optional[float] = 
             "Incorrect format used for image. Should be an url linking to an image, a base64 string, a local path, or a PIL image."
         )
     image = PIL.ImageOps.exif_transpose(image)
-    if len(mode) == 1:
-        image_fin = image.convert(mode[0])
+    if len(format) == 1:
+        image_fin = image.convert(format[0])
         image_fin = np.array(image_fin)
     else :
-        for m in range(len(mode)) :
+        for m in range(len(format)) :
             if m==0:
-                image_fin = image.convert(mode[m])
+                image_fin = image.convert(format[m])
                 image_fin = np.array(image_fin)
             else:
-                image_temp = image.convert(mode[m])
+                image_temp = image.convert(format[m])
                 image_temp = np.array(image_temp)
                 image_fin = np.append(image_fin, image_temp, axis=2)
     return image_fin
@@ -133,7 +133,7 @@ def data_loading(img_path="image_train/image", target_path="image_train/masque_f
             ## Determining a general distance between the top of the trunk and the sheath for each treatment
             ## 1. Loading canopy and sheath masks 
             # Load the image with all the mask
-            all_mask_img = load_image(all_mask, mode="L")
+            all_mask_img = load_image(all_mask, format="L")
             # Extract the sheath and trunc (with the respective index 3 and 4)
             sheath_img = (all_mask_img == 3) * 1
             trunc_img = (all_mask_img == 4) * 1
@@ -225,16 +225,16 @@ def fuse_all(data):
     for i in tqdm(range(data.shape[0])):
         ## Loading individual masks
         # Load the leaf mask and set non-zero pixels to 1.
-        feuille_img = load_image(data.loc[i, 'feuille'], mode="L")
+        feuille_img = load_image(data.loc[i, 'feuille'], format="L")
         feuille_img[feuille_img != 0] = 1
         # Load the inter-row mask and set non-zero pixels to 2.
-        inter_img = load_image(data.loc[i, 'inter'], mode="L")
+        inter_img = load_image(data.loc[i, 'inter'], format="L")
         inter_img[inter_img != 0] = 2
         # Load the sheath mask and set non-zero pixels to 3.
-        sheath_img = load_image(data.loc[i, 'sup'], mode="L")
+        sheath_img = load_image(data.loc[i, 'sup'], format="L")
         sheath_img[sheath_img != 0] = 3
         # Load the trunk mask and set non-zero pixels to 4.
-        trunc_img = load_image(data.loc[i, 'trunc'], mode="L")
+        trunc_img = load_image(data.loc[i, 'trunc'], format="L")
         trunc_img[trunc_img != 0] = 4
 
         ## Combining masks
@@ -256,7 +256,7 @@ def fuse_all(data):
 
         ## Saving the fused mask
         # Convert the numpy array to a PIL Image.
-        image = PIL.Image.fromarray(feuille_img, mode="L")
+        image = PIL.Image.fromarray(feuille_img, format="L")
         # Construct the output filename from the original image path.
         image_file_name = (
             "masque_final/" +
@@ -491,7 +491,7 @@ class AgrocamDataset(Dataset):
     data : pd.DataFrame
         DataFrame containing at least the URLs for the original images, target images,
         and the treatment group for each image.
-    mode : list of str, optional
+    format : list of str, optional
         List of color spaces for image representation (e.g., ["RGB"], ["HSV"], ["LAB"]).
         Default is ["RGB"].
 
@@ -503,7 +503,7 @@ class AgrocamDataset(Dataset):
         - 'target' (torch.Tensor): Target image with benchmark clustering for each class.
     """
 
-    def __init__(self, data, mode=["RGB"]):
+    def __init__(self, data, format=["RGB"]):
         ## Initializing the function
         # Reset the DataFrame indices to ensure consistent indicesing.
         self.data = data.reset_index()
@@ -511,8 +511,8 @@ class AgrocamDataset(Dataset):
         self.label = self.data.loc[:, "treatment"]
         # Assign the image transformation pipeline (e.g., normalization, resizing).
         self.transform = trans
-        # Store the color space mode(s) for image loading.
-        self.mode = mode
+        # Store the color space format(s) for image loading.
+        self.format = format
 
     def __len__(self):
         ## Return the total number of samples in the dataset, based on the number of labels.
@@ -525,10 +525,10 @@ class AgrocamDataset(Dataset):
         
         ## Loading the different images
         # Load the original image in the specified color space 
-        image = load_image(self.data.loc[idx, "image"], mode=self.mode)
-        # Load the image representing all the mask in grayscale ("L" mode).
+        image = load_image(self.data.loc[idx, "image"], format=self.format)
+        # Load the image representing all the mask in grayscale ("L" format).
         # In this image, each pixels is attributed with a number (0-4) representing a class
-        target = load_image(self.data.loc[idx, "all"], mode="L")
+        target = load_image(self.data.loc[idx, "all"], format="L")
 
         ## Changing the format the maks image so that it can be used by the algorithm
         # This new format assign one binary layer (e.g one binary mask) for each class (4 class + background)
@@ -670,8 +670,9 @@ from torch.utils.data import DataLoader
 from torchvision.ops import sigmoid_focal_loss
 from torch.utils.tensorboard import SummaryWriter
 # from tqdm import tqdm
+import os
 
-def train(model, epochs, data, save=True, mode=["RGB"]):
+def train(model, epochs, data, save=True, format=["RGB"]):
     """
     Train a PyTorch model for semantic segmentation on the Agrocam dataset.
     This function handles the training loop, validation, metrics monitoring, and model checkpointing.
@@ -687,7 +688,7 @@ def train(model, epochs, data, save=True, mode=["RGB"]):
         DataFrame containing image paths, target paths, and treatment conditions.
     save : bool, optional
         If True, saves the model checkpoint after training. Default is True.
-    mode : list of str, optional
+    format : list of str, optional
         List of color spaces for image representation (e.g., ["RGB"]). Default is ["RGB"].
 
     Returns
@@ -716,14 +717,10 @@ def train(model, epochs, data, save=True, mode=["RGB"]):
         cumloss, count = 0, 0
         # Initialize dictionaries to accumulate accuracy, sensitivity, and specificity for each class.
         label = ["bck", "feuille", "interrang", "fil", "trunc"]
-        cumacc_train = {
-            i: {
-                "score_acc": 0,
-                "score_sens": 0,
-                "score_speci": 0,
-                "label": label[i]
-            } for i in range(5)
-        }
+        cumacc_train = {i: {"score_acc": 0,
+                            "score_sens": 0,
+                            "score_speci": 0,
+                            "label": label[i]} for i in range(5)}
         idx = 0
 
         ## Data preparation
@@ -731,20 +728,16 @@ def train(model, epochs, data, save=True, mode=["RGB"]):
         indices_train, indices_test = seperate_train_test(data)
         X_train, X_test = data.loc[indices_train, :], data.loc[indices_test, :]
         # Convert the train and test sets to AgrocamDataset
-        data_train = AgrocamDataset(X_train, mode=mode)
-        data_test = AgrocamDataset(X_test, mode=mode)
+        data_train = AgrocamDataset(X_train, format=format)
+        data_test = AgrocamDataset(X_test, format=format)
         # Initialize a dataloader using MSamplesPerClassSampler sampler.
-        train_loader = DataLoader(
-            dataset=data_train,
-            batch_sampler=MSamplesPerClassSampler(data_train.label)
-        )
-        test_loader = DataLoader(
-            dataset=data_test,
-            batch_sampler=MSamplesPerClassSampler(data_test.label)
-        )
+        train_loader = DataLoader(dataset=data_train,
+                                  batch_sampler=MSamplesPerClassSampler(data_train.label))
+        test_loader = DataLoader(dataset=data_test,
+                                 batch_sampler=MSamplesPerClassSampler(data_test.label))
 
         ## Training phase
-        # Set the model to training mode.
+        # Set the model to training format.
         model.train()
         for z in train_loader:  # Loop over batches
             idx += 1
@@ -790,21 +783,15 @@ def train(model, epochs, data, save=True, mode=["RGB"]):
         mean_acc_cum = 0
         for k in cumacc_train:
             # Log sensitivity, specificity, and IoU for each class.
-            writer.add_scalar(
-                'train/' + cumacc_train[k]["label"] + '/sensibility',
-                cumacc_train[k]["score_sens"] / count,
-                epoch
-            )
-            writer.add_scalar(
-                'train/' + cumacc_train[k]["label"] + '/specificity',
-                cumacc_train[k]["score_speci"] / count,
-                epoch
-            )
-            writer.add_scalar(
-                'train/' + cumacc_train[k]["label"] + '/iou',
-                cumacc_train[k]["score_acc"] / count,
-                epoch
-            )
+            writer.add_scalar('train/' + cumacc_train[k]["label"] + '/sensibility',
+                              cumacc_train[k]["score_sens"] / count,
+                              epoch)
+            writer.add_scalar('train/' + cumacc_train[k]["label"] + '/specificity',
+                              cumacc_train[k]["score_speci"] / count,
+                              epoch)
+            writer.add_scalar('train/' + cumacc_train[k]["label"] + '/iou',
+                              cumacc_train[k]["score_acc"] / count,
+                              epoch)
             mean_acc_cum += cumacc_train[k]["score_acc"] / count
             val += 1
         # Log the average loss and total IoU for the epoch.
@@ -818,17 +805,13 @@ def train(model, epochs, data, save=True, mode=["RGB"]):
             cumloss, count = 0, 0
             # Initialize dictionaries to accumulate accuracy, sensitivity, and specificity for each class.
             label = ['bck', "feuille", "interrang", "fil", "trunc"]
-            cumacc_test = {
-                i: {
-                    "score_acc": 0,
-                    "score_sens": 0,
-                    "score_speci": 0,
-                    "label": label[i]
-                } for i in range(5)
-            }
+            cumacc_test = {i: {"score_acc": 0,
+                               "score_sens": 0,
+                               "score_speci": 0,
+                               "label": label[i]} for i in range(5)}
             idx = 0
 
-            # Set the model to evaluation mode.
+            # Set the model to evaluation format.
             model.eval()
             with torch.no_grad():  # Disable gradient computation for validation.
                 for w in test_loader:
@@ -863,21 +846,15 @@ def train(model, epochs, data, save=True, mode=["RGB"]):
                 mean_acc_cum = 0
                 for k in cumacc_test:
                     # Log sensitivity, specificity, and IoU for each class.
-                    writer.add_scalar(
-                        'test/' + cumacc_test[k]["label"] + '/sensibility',
-                        cumacc_test[k]["score_sens"] / count,
-                        epoch
-                    )
-                    writer.add_scalar(
-                        'test/' + cumacc_test[k]["label"] + '/specificity',
-                        cumacc_test[k]["score_speci"] / count,
-                        epoch
-                    )
-                    writer.add_scalar(
-                        'test/' + cumacc_test[k]["label"] + '/iou',
-                        cumacc_test[k]["score_acc"] / count,
-                        epoch
-                    )
+                    writer.add_scalar('test/' + cumacc_test[k]["label"] + '/sensibility',
+                                      cumacc_test[k]["score_sens"] / count,
+                                      epoch)
+                    writer.add_scalar('test/' + cumacc_test[k]["label"] + '/specificity',
+                                      cumacc_test[k]["score_speci"] / count,
+                                      epoch)
+                    writer.add_scalar('test/' + cumacc_test[k]["label"] + '/iou',
+                                      cumacc_test[k]["score_acc"] / count,
+                                      epoch)
                     mean_acc_cum += cumacc_test[k]["score_acc"] / count
                     val += 1
                 # Log the total IoU for validation.
@@ -885,29 +862,36 @@ def train(model, epochs, data, save=True, mode=["RGB"]):
 
     ## Saving the model as a checkpoint
     if save:
-        torch.save(
-            model.state_dict(),
-            "Segmentation/checkpoint/" + model.name + '_checkpoint.pth'
-        )
+        ## Adding a checkpoint folder to save the model weights
+        # Define the path to the Segmentation folder
+        checkpoint_folder = os.path.join("Segmentation", "checkpoint")
+        # Check if the checkpoint folder exists, if not, create it
+        if not os.path.exists(checkpoint_folder):
+            os.makedirs(checkpoint_folder)
+        torch.save(model.state_dict(),"Segmentation/checkpoint/" + model.name + '_checkpoint.pth')
 
 if __name__ == "__main__":
     import argparse
     ## Ask the relevant arguments
     parser = argparse.ArgumentParser(description='Train or Use a segmentation model on a set of images.')
     # Arguments for the generation of the training database
-    parser.add_argument('--folder_url_train_img', type=str, required=False, 
-                        help='URL of the folder containing images for segmentation or training.', default="Core/Images/image_train/image")
-    parser.add_argument('--folder_url_train_mask', type=str, required=False, 
-                        help='URL of the folder containing related mask. When training they correspond to ground truth mask and when segmenting, they correspond to predicted mask.', 
-                        default="Core/Images/image_train/masque_final")
-    parser.add_argument('--train_or_segment', type=str, required=False, 
-                        help='Choose to train an algorithm or use it to segment images', default="segment")
+    parser.add_argument('--folder_url_train_img', type=str, required=False, default="Core/Images/image_train/image",
+                        help='URL of the folder containing images for segmentation or training.')
+    parser.add_argument('--folder_url_train_mask', type=str, required=False, default="Core/Images/image_train/masque_final",
+                        help='URL of the folder containing related mask. When training they correspond to ground truth mask and when segmenting, they correspond to predicted mask.')
+    parser.add_argument('--train_or_segment', type=str, required=False, default="segment",
+                        help='Choose to train an algorithm or use it to segment images.')
     parser.add_argument('--weight_url', type=str, required=False, default="No_weight",
-                        help='Import weight of the model. If not used, pretrained weights for MobileNetV3 are used')
+                        help='Import weight of the model. If not used, pretrained weights for MobileNetV3 are used.')
+    parser.add_argument('--format_used', type=str, required=False, default="HSV",
+                        help='Image format used for training the model and for generating the different mask.')
     # Argments for training
     parser.add_argument('--epochs', type=int, required=False, 
                         help='Number of epochs for training', 
                         default=10)
+    parser.add_argument('--saving', type=bool, required=False, 
+                        help='Do we want to save the model weights ?', 
+                        default=True)
     # Store the parsed arguments
     args = parser.parse_args()
     
@@ -932,6 +916,24 @@ if __name__ == "__main__":
     model = lraspp_mobilenet_v3_large(weights=LRASPP_MobileNet_V3_Large_Weights.COCO_WITH_VOC_LABELS_V1)
     model.classifier.low_classifier = torch.nn.Conv2d(40, 5, kernel_size=(1, 1), stride=(1, 1))
     model.classifier.high_classifier = torch.nn.Conv2d(128, 5, kernel_size=(1, 1), stride=(1, 1))
+    # Extracting the format used in a list
+    format_used = args.format_used
+    if "-" in format_used:
+        format_used_list = str.split(format_used, "-")
+    else:
+        format_used_list = [format_used]
+    # Changing the first convolution layer of the model so that it fits the number of channels
+    Number_of_channels = len("".join(format_used_list))
+    if Number_of_channels != 3:
+        from functools import partial
+        from torch.nn import BatchNorm2d, Hardswish
+        from torchvision.ops.misc import Conv2dNormActivation
+        model.backbone["0"] = Conv2dNormActivation(Number_of_channels,
+                                            16,
+                                            kernel_size=3,
+                                            stride=2,
+                                            norm_layer=partial(BatchNorm2d, eps=0.001, momentum=0.01),
+                                            activation_layer=Hardswish)
     if args.weight_url != "No_weight" :
         model.load_state_dict(torch.load(args.weight_url))
         print("Weight loaded !!")
@@ -940,7 +942,8 @@ if __name__ == "__main__":
     if args.train_or_segment == "train":
         ## Train the model
         epochs = args.epochs
-        train(model, epochs, data, save=True, mode=["HSV"])
+        saving = args.saving
+        train(model, epochs, data, save=saving, format=format_used_list)
     else:
         model.eval()
         trans = transforms.Compose([transforms.ToTensor()])
@@ -948,15 +951,14 @@ if __name__ == "__main__":
         with torch.no_grad():
             for i in tqdm(range(data.shape[0])):
                 # Load the image
-                img = load_image(data.loc[i, "image"], mode = ["HSV"])
+                img = load_image(data.loc[i, "image"], format = [format_used_list])
                 img = trans(img)
                 img = torch.unsqueeze(img, 0)
                 # Generate its predicted mask
                 img_mask = model(img)['out'].numpy()
                 img_mask = np.argmax(img_mask[0], axis=0)
                 # Save the mask
-                image = PIL.Image.fromarray(img_mask.astype('uint8'), mode="L")
+                image = PIL.Image.fromarray(img_mask.astype('uint8'), format="L")
                 num_slash = data.loc[i, 'image'].count('/')
                 image_file_name = "Core/Results/Image_mask/" + str.removesuffix(str.split(data.loc[i, 'image'], '/')[num_slash], ".jpg") + '__all.png'
                 image.save(image_file_name)
-
